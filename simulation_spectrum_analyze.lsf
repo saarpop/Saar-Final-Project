@@ -1,0 +1,123 @@
+switchtolayout;
+
+#Define parameters
+monitor = "R";
+sName = "source";
+
+#Define sweeps
+w1_s = [72.15];#[nm]
+w2_s = [83.00]; #[nm]
+gap_s = [21.21];#[nm]
+he_s = [718.91];#[nm]
+
+#Define consants
+lambda0 = 1000e-9;
+f0 = c/lambda0 ;
+lambda_start = c/(f0*1.25);
+lambda_end = c/(f0*0.75);
+freq_points = 1001;
+
+i_lambda0 = 501;
+
+theta_i = 20;
+ref_index = 1.45;
+period = (lambda0/ref_index)/(2*sin(theta_i*pi/180));
+
+
+#Define resmat
+ini = 1;
+resmat = zeros(1,13);
+count = length(w1_s)*length(w2_s)*length(gap_s)*length(he_s);
+
+#Perform simulations
+
+#Set run parameters
+w1 = w1_s*10^-9;
+w2 = w2_s*10^-9;
+gap = gap_s*10^-9;
+he = he_s*10^-9;
+
+#? [w1x, w2x, gx, hx];
+
+select("FDTD");
+set("x span",period);
+
+
+x1 = -(0.5*gap+0.5*w1);
+x2 = 0.5*gap+0.5*w2;
+
+select("rectangle1");
+set("x span",w1);
+set("x",x1);
+set("z span", he);
+
+select("rectangle2");
+set("x span",w2);
+set("x",x2);
+set("z span", he);
+
+select("source");
+set("wavelength start",lambda_start);
+set("wavelength stop",lambda_end);
+set("angle theta",theta_i); #degrees
+setglobalmonitor("frequency points",freq_points);
+setglobalmonitor("use wavelength spacing",0);
+
+#Run
+run;
+
+
+
+###############################
+###  Far Field Anaylsis  ###
+j = i_lambda0;
+E = getresult("R","E");
+lambda = E.lambda;
+
+select("source");
+if (get("direction")=="Backward") { source_direct = -1; }
+else {source_direct = 1; }
+prop_dirct = -source_direct ;
+
+R_Efield = getresult("R","E");
+lambda = R_Efield.lambda;
+#j=i_lambda0; 
+?lambda(j);
+?
+#Export parameters from run
+n = gratingn(monitor,j,ref_index,prop_dirct);
+if (length(n) == 2){
+    sinx = gratingu1(monitor,j,ref_index,prop_dirct);
+    pol_pow = gratingpolar(monitor,j,ref_index,prop_dirct);
+    temp_ref = getresult(monitor, "T");
+    ref = temp_ref.T(j);
+    
+    #Calculate parameters for excel
+    rel_pow = sum(abs(pol_pow)^2, 3);
+    x_ang_deg = asin(sinx)*180/pi;
+    tot_pow = rel_pow*abs(ref);
+    
+    #Print
+    ? n;
+    ? x_ang_deg;
+    ? rel_pow ;
+    ? tot_pow;
+}
+
+###############################
+###  Plot Far Field  ###
+
+# choosing the illumination window (effect the sinc width):
+per_x = 100 ;
+per_y = 100;
+res = 501; # projection resolution
+
+E_ff = farfield3d(monitor,j,res,res,2,per_x,per_y,ref_index,prop_dirct);
+ux = farfieldux(monitor,j,res,res,ref_index);
+uy = farfielduy(monitor,j,res,res,ref_index);
+theta = linspace(-90,90,res);
+phi = 0; # at phi=0 (x-axis)
+Etheta = farfieldspherical( E_ff, ux, uy, theta, phi);
+
+plot(theta,Etheta);
+

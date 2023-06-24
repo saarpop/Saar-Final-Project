@@ -1,0 +1,104 @@
+switchtolayout;
+#Define parameters
+monitor = "R";
+sName = "source";
+
+#Define sweeps
+w1_s = 55:10:95;#[nm]
+w2_s = 55:10:95; #[nm]
+gap_s = 25:10:65; #[nm]
+he_s = 550:100:650; #[nm]
+
+#Define consants
+lambda0 = 1000*10^-9;
+theta_i = 20;
+n = 1.45;
+period = 1000/n/2/sin(20*pi/180)*10^-9;
+
+#Define resmat
+ini = 1;
+resmat = zeros(1,13);
+count = length(w1_s)*length(w2_s)*length(gap_s)*length(he_s);
+
+#Perform simulations
+for (w1x = w1_s){
+    for (w2x = w2_s){
+        for (gx = gap_s){ 
+            for(hx = he_s){     
+            try{            
+            #Set run parameters
+            w1 = w1x*10^-9;    
+            w2 = w2x*10^-9;
+            gap = gx*10^-9;
+            he = hx*10^-9;
+            
+            ? [w1x, w2x, gx, hx];   
+            
+            select("FDTD");
+            set("x span",period);
+        
+            x1 = -(0.5*gap+0.5*w1);
+            x2 = 0.5*gap+0.5*w2;
+        
+            select("rectangle1");
+            set("x span",w1);
+            set("x",x1);
+            set("z span", he);
+        
+            select("rectangle2");
+            set("x span",w2);
+            set("x",x2);
+            set("z span", he);
+        
+            select("source");
+            set("wavelength start",lambda0);
+            set("wavelength stop",lambda0);
+            set("angle theta",theta_i); #degrees
+            
+            #Run
+            run;
+            
+            #Export parameters from run
+            n = gratingn(monitor);
+            if (length(n) == 2){
+            sinx = gratingu1(monitor);
+            pol_pow = gratingpolar(monitor);
+            ref = getresult(monitor, "T");
+        
+            #Calculate parameters for excel
+            rel_pow = sum(abs(pol_pow)^2, 3);
+            x_ang_deg = asin(sinx)*180/pi;
+            tot_pow = rel_pow*abs(ref.T);
+        
+            #Print
+            ? n;
+            ? x_ang_deg;
+            ? tot_pow;
+            
+            #Organize results
+                
+            if (ini == 1){
+                resmat = [w1, w2, gap, he, n(1), n(2), x_ang_deg(1), x_ang_deg(2), rel_pow(1), rel_pow(2), abs(ref.T), tot_pow(1), tot_pow(2)];
+                ini = 0;
+            }
+            else {
+                printvec = [w1, w2, gap, he, n(1), n(2), x_ang_deg(1), x_ang_deg(2), rel_pow(1), rel_pow(2), abs(ref.T), tot_pow(1), tot_pow(2)];
+                resmat = [resmat, printvec];
+            }
+            }
+            else{
+                print("Error was found - len(n) != 2");
+                ? [w1, w2, gap, he];            
+            }
+            #? resmat;
+            switchtolayout;
+            count = count - 1;
+            print (num2str(count) + " left to go");
+            matlabsave("TM_sweeps_8", resmat);
+            }
+            }
+        }
+    }
+}
+#Save in matlab
+#? resmat;
