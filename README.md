@@ -4,7 +4,7 @@ Saar Poplinger's EE B.Sc. final project code files.
 
 ## General run notes:
 
-• .lsf files - Lumerical workspace files - Open the code file in the corresponding simulation file and run (or change parameters first and then run).
+• .lsf files - Lumerical workspace files - Open the code file in the corresponding simulation file (from Google Drive) and run (or change parameters first and then run). Link to Google Drive: https://drive.google.com/drive/folders/1PX2SdqVLsQWwZVu5lMxyiQL04COi2s5a?usp=share_link
 
 • .ipynb file - Jupyter notebook (python) files, they run in blocks. Just run each block according to instructions in the code.
 
